@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.coverage
+pytest.log
+todo_api.egg-info/
+*.pyc
+.env
+*.db
+*.sqlite3
