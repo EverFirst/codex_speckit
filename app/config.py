@@ -18,6 +18,18 @@ class Settings(BaseSettings):
     @classmethod
     def parse_cors(cls, value):
         if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                return ["*"]
+            if value.startswith("["):
+                import json
+
+                try:
+                    parsed = json.loads(value)
+                    if isinstance(parsed, list):
+                        return parsed
+                except json.JSONDecodeError:
+                    pass
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
 

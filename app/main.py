@@ -8,6 +8,7 @@ from sqlalchemy import text
 from app.api.v1 import routes as todo_routes
 from app.config import get_settings
 from app.db.base import engine
+from app.db.models import metadata
 
 
 logger = logging.getLogger("todo_api")
@@ -37,6 +38,10 @@ def create_app() -> FastAPI:
         with engine.connect() as connection:
             connection.exec_driver_sql("SELECT 1")
         return {"status": "ok", "database": str(settings.database_url)}
+
+    @app.on_event("startup")
+    def ensure_schema() -> None:
+        metadata.create_all(bind=engine)
 
     return app
 
