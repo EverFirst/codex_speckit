@@ -5,6 +5,12 @@
 **Status**: Draft  
 **Input**: User description: "싱글 유저 TODO API에서 CRUD와 완료 토글을 제공한다."
 
+## Clarifications
+
+### Session 2025-11-11
+
+- Q: 완료 상태만 변경하는 `PATCH /todos/{id}/status` 호출에서도 `updated_at` 타임스탬프를 갱신해야 할까요? A: 예, completed/completed_at가 바뀌면 항상 `updated_at`도 현재 시각으로 업데이트
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - TODO 작성 및 목록 조회 (Priority: P1)
@@ -73,7 +79,7 @@
 - **FR-005**: `GET /todos`는 전체 항목을 `created_at` 내림차순으로 반환하고 페이지 제한이 없음을 명시하는 `total_count`를 포함해야 한다.
 - **FR-006**: `GET /todos/{id}`는 존재하지 않을 경우 404를, 성공 시 해당 항목 전체 속성을 반환해야 한다.
 - **FR-007**: `PUT /todos/{id}` 또는 `PATCH /todos/{id}`는 제목·설명·completed를 수정하며 동일한 유효성 규칙을 적용하고 `updated_at`을 갱신해야 한다.
-- **FR-008**: `PATCH /todos/{id}/status`는 완료 전환 전용 API로 completed와 completed_at를 토글하며 변경 후 상태를 응답에 포함해야 한다.
+- **FR-008**: `PATCH /todos/{id}/status`는 완료 전환 전용 API로 completed와 completed_at를 토글하며 변경 후 상태를 응답에 포함하고, 상태가 바뀔 때마다 `updated_at`도 현재 시각으로 갱신해야 한다.
 - **FR-009**: `DELETE /todos/{id}`는 항목을 영구 제거하고 204 No Content를 반환해야 하며 복구 기능은 제공하지 않는다.
 - **FR-010**: 모든 엔드포인트는 JSON 응답을 사용하고 성공/실패 시 적절한 HTTP 상태 코드(200/201/204/400/404/422/500)를 준수해야 한다.
 - **FR-011**: 오류 응답에는 `detail` 메시지와 가능한 경우 `error_code`를 포함해 클라이언트가 원인을 파악할 수 있게 해야 한다.
