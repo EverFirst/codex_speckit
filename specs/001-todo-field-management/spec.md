@@ -1,4 +1,4 @@
-# Feature Specification: TODO Advanced Field Management
+﻿# Feature Specification: TODO Advanced Field Management
 
 **Feature Branch**: `001-todo-field-management`  
 **Created**: 2025-11-11  
@@ -57,8 +57,9 @@ As a user I can attach up to 10 short tags to a TODO, view them, and ensure dupl
 ### Edge Cases
 
 - Due date supplied without zero-padded month/day (e.g., `2025-7-1`) must be rejected as non-ISO.
+- Past due dates that are otherwise valid (e.g., yesterday) must be accepted to support backlog imports.
 - Category strings consisting only of whitespace should be treated as removal rather than stored text.
-- Tags differing only by case (`"Work"` vs `"work"`) should clarify whether they are considered duplicates; default assumption is case-insensitive duplicate detection.
+- Tags must be normalized to lowercase before validation, so inputs like `"Work"` and `"work"` will be treated as duplicates and rejected.
 - Bulk GET of legacy TODOs with no advanced fields must still return successfully with `null`/default values without backfilling data.
 - Simultaneous updates that reduce and add tags must preserve uniqueness after the full replacement.
 
@@ -72,12 +73,14 @@ As a user I can attach up to 10 short tags to a TODO, view them, and ensure dupl
 - **FR-004**: `priority` MUST accept only `low`, `medium`, or `high` (case-insensitive) and default to `medium` whenever omitted.
 - **FR-005**: `category` MUST store up to 50 UTF-8 characters after trimming whitespace; inputs exceeding 50 characters MUST trigger HTTP 400.
 - **FR-006**: Sending `category=null` or an empty string MUST clear the category without affecting other fields.
-- **FR-007**: `tags` MUST be stored as an ordered array with a maximum of 10 entries; each tag MUST be non-empty ASCII/UTF-8 up to 20 characters after trimming.
-- **FR-008**: The API MUST reject requests where the provided tag list contains duplicates (case-insensitive comparison) with an error message explaining the conflict.
+- **FR-007**: `tags` MUST be stored as an ordered array with a maximum of 10 entries; each tag MUST be non-empty ASCII/UTF-8 up to 20 characters after trimming and will be normalized to lowercase before persistence.
+- **FR-008**: The API MUST reject requests where the provided tag list contains duplicates after lowercase normalization, with an error message explaining the conflict.
 - **FR-009**: The API MUST reject requests where more than 10 tags are provided and include the maximum count in the error payload.
 - **FR-010**: `GET /todos` and `GET /todos/{id}` MUST always return the new fields (`due_date`, `priority`, `category`, `tags`) for every item, defaulting to `null`, `"medium"`, `null`, and an empty array for legacy records.
 - **FR-011**: Data migration MUST add nullable columns (or equivalent fields) for due date, priority (default medium), category, and a tag association table/JSON column without altering existing rows.
 - **FR-012**: Swagger/OpenAPI documentation MUST be updated to describe the new fields, their formats, defaults, and validation errors so that API consumers can self-serve.
+- **FR-013**: `PUT /todos/{id}` MUST interpret the supplied `tags` array as the complete desired list, replacing any existing tags after normalization rather than performing incremental merges.
+- **FR-014**: Validation MUST accept past `due_date` values (including today or earlier) when they satisfy the ISO format, enabling historical backlog imports and late entries.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -89,7 +92,15 @@ As a user I can attach up to 10 short tags to a TODO, view them, and ensure dupl
 ### Measurable Outcomes
 
 - **SC-001**: 100% of POST/PUT requests with valid due dates, priority, category, and tags persist and are retrievable without data loss across subsequent GET requests.
-- **SC-002**: 100% of POST/PUT requests with invalid formats (date, priority enum, category >50 chars, tag >20 chars, duplicate tags, >10 tags) return HTTP 400 with field-specific error codes.
+- **SC-002**: 100% of POST/PUT requests with invalid formats (date, priority enum, category >50 chars, tag >20 chars, duplicate tags after normalization, >10 tags) return HTTP 400 with field-specific error codes.
 - **SC-003**: P95 latency for POST/PUT/GET endpoints that include advanced fields remains under 200 ms after validation is added, measured in a staging load test.
 - **SC-004**: Legacy TODOs created before this feature remain readable and editable with zero schema- or serialization-related errors in regression suites.
 - **SC-005**: Automated test coverage touching advanced field validations and serialization stays at or above 70%, satisfying the stated coverage floor.
+
+## Clarifications
+### Session 2025-11-11
+
+- Q: How should tag duplicate detection treat casing when validating tags arrays? ??A: Normalize all tags to lowercase before storage/validation.
+- Q: How should the API handle tag updates when clients call PUT /todos/{id}? ??A: Clients send full tag list; server replaces existing tags with normalized input.
+- Q: Should the API allow due_date values earlier than today? ??A: Allow any valid ISO date, even if already past.
+
