@@ -11,6 +11,7 @@ paths:
   /todos:
     get:
       summary: List todos
+      operationId: listTodos
       responses:
         '200':
           description: Array ordered by created_at DESC
@@ -20,6 +21,7 @@ paths:
                 $ref: '#/components/schemas/TodoListResponse'
     post:
       summary: Create todo
+      operationId: createTodo
       requestBody:
         required: true
         content:

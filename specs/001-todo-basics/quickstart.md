@@ -38,6 +38,8 @@ uvicorn app.main:app --reload
 Endpoints:
 - Swagger UI: http://127.0.0.1:8000/docs
 - Health check: http://127.0.0.1:8000/health
+- Structured request logs include method/path/status/duration.
+- Health check: http://127.0.0.1:8000/health
 
 ## 5. Sample Workflow
 ```bash
