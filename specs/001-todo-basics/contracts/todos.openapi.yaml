@@ -1,0 +1,209 @@
+openapi: 3.0.3
+info:
+  title: TODO API
+  version: 1.0.0
+  description: >
+    Single-user TODO service implementing CRUD and completion toggles per spec
+    001-todo-basics. All endpoints are stateless and return JSON.
+servers:
+  - url: http://localhost:8000
+paths:
+  /todos:
+    get:
+      summary: List todos
+      responses:
+        '200':
+          description: Array ordered by created_at DESC
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoListResponse'
+    post:
+      summary: Create todo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoCreate'
+      responses:
+        '201':
+          description: Created todo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+  /todos/{todo_id}:
+    parameters:
+      - $ref: '#/components/parameters/TodoId'
+    get:
+      summary: Retrieve single todo
+      responses:
+        '200':
+          description: Todo item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '404':
+          $ref: '#/components/responses/TodoNotFound'
+    put:
+      summary: Replace todo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoUpdate'
+      responses:
+        '200':
+          description: Updated todo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '404':
+          $ref: '#/components/responses/TodoNotFound'
+    patch:
+      summary: Partial update (title/description/completed)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoPatch'
+      responses:
+        '200':
+          description: Updated todo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '404':
+          $ref: '#/components/responses/TodoNotFound'
+    delete:
+      summary: Delete todo
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/TodoNotFound'
+  /todos/{todo_id}/status:
+    parameters:
+      - $ref: '#/components/parameters/TodoId'
+    patch:
+      summary: Toggle completion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoToggle'
+      responses:
+        '200':
+          description: Updated todo status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '404':
+          $ref: '#/components/responses/TodoNotFound'
+components:
+  parameters:
+    TodoId:
+      name: todo_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    TodoNotFound:
+      description: Todo not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    TodoBase:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          nullable: true
+          maxLength: 2000
+    TodoCreate:
+      allOf:
+        - $ref: '#/components/schemas/TodoBase'
+      required: [title]
+    TodoUpdate:
+      allOf:
+        - $ref: '#/components/schemas/TodoBase'
+      required: [title]
+    TodoPatch:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          nullable: true
+          maxLength: 2000
+        completed:
+          type: boolean
+      additionalProperties: false
+    TodoToggle:
+      type: object
+      properties:
+        completed:
+          type: boolean
+      required: [completed]
+    Todo:
+      allOf:
+        - $ref: '#/components/schemas/TodoBase'
+      required:
+        - id
+        - completed
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        completed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+    TodoListResponse:
+      type: object
+      properties:
+        total_count:
+          type: integer
+          minimum: 0
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Todo'
+      required: [total_count, items]
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+        error_code:
+          type: string
+      required: [detail]
