@@ -1,0 +1,199 @@
+﻿openapi: 3.0.3
+info:
+  title: TODO API - Advanced Field Contracts
+  version: 1.1.0
+  description: >-
+    Contracts for Feature 001 advanced field management (due_date, priority,
+    category, tags). All endpoints extend the original TODO CRUD API.
+paths:
+  /api/v1/todos:
+    post:
+      summary: Create a TODO with optional advanced fields
+      operationId: createTodoAdvanced
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoCreatePayload'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    get:
+      summary: List TODOs including advanced fields
+      operationId: listTodosAdvanced
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoListResponse'
+  /api/v1/todos/{todo_id}:
+    parameters:
+      - $ref: '#/components/parameters/TodoId'
+    get:
+      summary: Retrieve a TODO with advanced fields
+      operationId: getTodoAdvanced
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Replace a TODO including tag list replacement
+      operationId: updateTodoAdvanced
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoUpdatePayload'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+components:
+  parameters:
+    TodoId:
+      name: todo_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: UUID string identifier of the TODO.
+  responses:
+    NotFound:
+      description: TODO not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: TODO not found
+    ValidationError:
+      description: Pydantic validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HTTPValidationError'
+  schemas:
+    TodoCreatePayload:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        due_date:
+          type: string
+          format: date
+          description: Optional ISO 8601 date; past dates allowed.
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
+        category:
+          type: string
+          maxLength: 50
+          description: Optional label (trimmed; empty string clears value).
+        tags:
+          type: array
+          description: Ordered list of lowercase tags (full array must be sent on create/update).
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 20
+            description: Lowercase string; duplicates rejected after normalization.
+    TodoUpdatePayload:
+      allOf:
+        - $ref: '#/components/schemas/TodoCreatePayload'
+      description: Full replacement payload. Omitted fields retain prior value except tags which must include the full desired list if provided.
+    TodoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        completed:
+          type: boolean
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        priority:
+          type: string
+          enum: [low, medium, high]
+        category:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+    TodoListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TodoResponse'
+        total:
+          type: integer
+    HTTPValidationError:
+      type: object
+      properties:
+        detail:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+    ValidationError:
+      type: object
+      properties:
+        loc:
+          type: array
+          items:
+            oneOf:
+              - type: string
+              - type: integer
+        msg:
+          type: string
+        type:
+          type: string
