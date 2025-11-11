@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID, uuid4
 
 from app.api import schemas
@@ -28,6 +28,10 @@ class TodoService:
             "title": payload.title,
             "description": payload.description,
             "completed": False,
+            "due_date": payload.due_date,
+            "priority": payload.priority,
+            "category": payload.category,
+            "tags": payload.tags,
             "created_at": now,
             "updated_at": now,
             "completed_at": None,
@@ -54,6 +58,10 @@ class TodoService:
             "description": payload.description,
             "completed": payload.completed,
             "completed_at": now if payload.completed else None,
+            "due_date": payload.due_date,
+            "priority": payload.priority,
+            "category": payload.category,
+            "tags": payload.tags,
             "updated_at": now,
         }
         updated = self.repository.update_full(todo_id, data)
@@ -65,14 +73,14 @@ class TodoService:
         self, todo_id: UUID, payload: schemas.TodoPatch
     ) -> schemas.TodoResponse:
         now = _utcnow()
-        data: dict[str, Optional[bool | str | datetime]] = {}
-        if payload.title is not None:
-            data["title"] = payload.title
-        if payload.description is not None:
-            data["description"] = payload.description
-        if payload.completed is not None:
-            data["completed"] = payload.completed
-            data["completed_at"] = now if payload.completed else None
+        changes = payload.model_dump(exclude_unset=True)
+        data: dict[str, Any] = {}
+        for field in ("title", "description", "due_date", "priority", "category", "tags"):
+            if field in changes:
+                data[field] = changes[field]
+        if "completed" in changes:
+            data["completed"] = changes["completed"]
+            data["completed_at"] = now if changes["completed"] else None
         if not data:
             raise ValueError("No fields to update")
         data["updated_at"] = now
